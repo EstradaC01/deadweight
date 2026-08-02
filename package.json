@@ -1,0 +1,131 @@
+{
+  "name": "deadweight",
+  "displayName": "Deadweight",
+  "description": "Live dead-export radar. Highlights exported symbols with zero references anywhere else in the workspace, as you work.",
+  "version": "0.0.1",
+  "publisher": "estradacarl",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "deadweight.refresh",
+        "title": "Deadweight: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "deadweight.deleteExport",
+        "title": "Deadweight: Delete Unused Export",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "deadweight.ignoreExport",
+        "title": "Deadweight: Ignore This Export",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "deadweight.revealInTree",
+        "title": "Deadweight: Reveal in Sidebar"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "deadweight",
+          "title": "Deadweight",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "deadweight": [
+        {
+          "id": "deadweight.tree",
+          "name": "Unused Exports"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "deadweight.refresh",
+          "when": "view == deadweight.tree",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "deadweight.deleteExport",
+          "when": "view == deadweight.tree && viewItem == deadExport"
+        },
+        {
+          "command": "deadweight.ignoreExport",
+          "when": "view == deadweight.tree && viewItem == deadExport"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Deadweight",
+      "properties": {
+        "deadweight.exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/*.d.ts",
+            "**/*.test.*",
+            "**/*.spec.*",
+            "**/node_modules/**",
+            "**/dist/**",
+            "**/out/**"
+          ],
+          "description": "Glob patterns for files Deadweight should never scan."
+        },
+        "deadweight.ignoreBarrelFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Skip re-export checks in index.ts/index.tsx barrel files (their exports are meant to be consumed outside the immediate folder, which the workspace-wide reference count already covers, but barrels commonly re-export things for external package consumers that a single-workspace scan can't see)."
+        },
+        "deadweight.refreshOn": {
+          "type": "string",
+          "enum": [
+            "save",
+            "type"
+          ],
+          "default": "save",
+          "description": "Whether Deadweight rescans on every save (recommended) or on every edit (more expensive)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "npm run compile -- --watch",
+    "package": "npm run compile -- --minify",
+    "test:engine": "esbuild src/engine.test.ts --bundle --outfile=dist-test/engine.test.js --external:vscode --format=cjs --platform=node && node dist-test/engine.test.js",
+    "test": "npm run typecheck && npm run test:engine",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.3.9",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.4.0"
+  }
+}
