@@ -28,6 +28,11 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "deadweight.showDashboard",
+        "title": "Deadweight: Open Workspace Map",
+        "icon": "$(graph)"
+      },
+      {
         "command": "deadweight.deleteExport",
         "title": "Deadweight: Delete Unused Export",
         "icon": "$(trash)"
@@ -38,8 +43,8 @@
         "icon": "$(eye-closed)"
       },
       {
-        "command": "deadweight.revealInTree",
-        "title": "Deadweight: Reveal in Sidebar"
+        "command": "deadweight.clearIgnored",
+        "title": "Deadweight: Clear Ignored Exports"
       }
     ],
     "viewsContainers": {
@@ -62,9 +67,19 @@
     "menus": {
       "view/title": [
         {
+          "command": "deadweight.showDashboard",
+          "when": "view == deadweight.tree",
+          "group": "navigation@1"
+        },
+        {
           "command": "deadweight.refresh",
           "when": "view == deadweight.tree",
-          "group": "navigation"
+          "group": "navigation@2"
+        },
+        {
+          "command": "deadweight.clearIgnored",
+          "when": "view == deadweight.tree",
+          "group": "1_actions"
         }
       ],
       "view/item/context": [
@@ -107,8 +122,17 @@
             "save",
             "type"
           ],
+          "enumDescriptions": [
+            "Rescan when a file is saved.",
+            "Rescan while typing, debounced. Uses the unsaved buffer, so results track edits before they hit disk."
+          ],
           "default": "save",
           "description": "Whether Deadweight rescans on every save (recommended) or on every edit (more expensive)."
+        },
+        "deadweight.showDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Report unused exports as faded Problems-panel hints, in addition to the inline note."
         }
       }
     }

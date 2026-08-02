@@ -1,3 +1,6 @@
 import { usedHelper, USED_CONSTANT } from './utils';
+import { LiveShape, livePair } from './shapes';
 
-console.log(usedHelper(USED_CONSTANT));
+const shape: LiveShape = { id: 'root' };
+
+console.log(usedHelper(USED_CONSTANT), shape.id, livePair);

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { DeadExport } from './engine';
+import { DeadExport, DeadExportKind } from './engine';
 
 type TreeNode = FileNode | ExportNode;
 
@@ -39,14 +39,16 @@ export class DeadweightTreeProvider implements vscode.TreeDataProvider<TreeNode>
       );
       item.description = `${element.exports.length} unused`;
       item.resourceUri = vscode.Uri.file(element.fileName);
+      item.tooltip = element.fileName;
       item.contextValue = 'deadFile';
       return item;
     }
 
     const d = element.deadExport;
     const item = new vscode.TreeItem(d.name, vscode.TreeItemCollapsibleState.None);
-    item.description = `line ${d.line + 1}`;
-    item.iconPath = new vscode.ThemeIcon('warning');
+    item.description = `${d.kind} · line ${d.line + 1}`;
+    item.iconPath = new vscode.ThemeIcon(iconFor(d.kind));
+    item.tooltip = `${d.name} — no references outside ${path.basename(d.fileName)}`;
     item.contextValue = 'deadExport';
     item.command = {
       command: 'vscode.open',
@@ -61,12 +63,38 @@ export class DeadweightTreeProvider implements vscode.TreeDataProvider<TreeNode>
 
   getChildren(element?: TreeNode): TreeNode[] {
     if (!element) {
-      const files = [...this.byFile.entries()].filter(([, list]) => list.length > 0);
-      return files.map(([fileName, list]) => new FileNode(fileName, list));
+      return [...this.byFile.entries()]
+        .filter(([, list]) => list.length > 0)
+        .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+        .map(([fileName, list]) => new FileNode(fileName, list));
     }
     if (element.kind === 'file') {
-      return element.exports.map((d) => new ExportNode(d));
+      return [...element.exports]
+        .sort((a, b) => a.line - b.line)
+        .map((d) => new ExportNode(d));
     }
     return [];
+  }
+}
+
+/** Matches the symbol icons VS Code uses elsewhere, so the tree reads at a glance. */
+function iconFor(kind: DeadExportKind): string {
+  switch (kind) {
+    case 'function':
+      return 'symbol-function';
+    case 'class':
+      return 'symbol-class';
+    case 'interface':
+      return 'symbol-interface';
+    case 'type':
+      return 'symbol-parameter';
+    case 'enum':
+      return 'symbol-enum';
+    case 'variable':
+      return 'symbol-variable';
+    case 'reexport':
+      return 'references';
+    default:
+      return 'symbol-misc';
   }
 }
