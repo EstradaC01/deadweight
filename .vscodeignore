@@ -1,0 +1,19 @@
+# Everything the published extension does not need at runtime. Without this
+# the .vsix carried the sourcemap (13.8 MB), the bundled engine test (9.5 MB)
+# and the whole of src/ - about 27 MB unpacked to ship one 3.4 MB bundle.
+
+.vscode/**
+.github/**
+src/**
+test-fixture/**
+dist-test/**
+dist/**/*.map
+
+node_modules/**
+package-lock.json
+tsconfig.json
+.gitignore
+.gitattributes
+
+# The engine bundles the TypeScript compiler, so the sourcemap is enormous and
+# useless to a consumer; dist/extension.js itself is what ships.

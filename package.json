@@ -4,8 +4,23 @@
   "description": "Live dead-export radar. Highlights exported symbols with zero references anywhere else in the workspace, as you work.",
   "version": "0.0.1",
   "publisher": "estradacarl",
-  "private": true,
   "license": "MIT",
+  "icon": "resources/icon.png",
+  "keywords": [
+    "dead code",
+    "unused exports",
+    "tree shaking",
+    "refactoring",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EstradaC01/deadweight.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EstradaC01/deadweight/issues"
+  },
+  "homepage": "https://github.com/EstradaC01/deadweight#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -143,12 +158,15 @@
     "package": "npm run compile -- --minify",
     "test:engine": "esbuild src/engine.test.ts --bundle --outfile=dist-test/engine.test.js --external:vscode --format=cjs --platform=node && node dist-test/engine.test.js",
     "test": "npm run typecheck && npm run test:engine",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "vsix": "npm run package && vsce package",
+    "publish:marketplace": "npm test && npm run package && vsce publish"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.20.0",
     "typescript": "^5.4.0"
   }
