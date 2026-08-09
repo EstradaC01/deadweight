@@ -177,7 +177,10 @@ export class DeadweightDashboard {
   :root {
     --ramp-0: #86b6ef;
     --ramp-1: #5598e7;
-    --ramp-2: #2a78d6;
+    /* #2874cf, not the #2a78d6 it was: white on that older value measured
+       4.42:1, just under the 4.5:1 needed for the 11px direct labels. The
+       nudge is two luminance percent and keeps the ramp strictly ordered. */
+    --ramp-2: #2874cf;
     --ramp-3: #1c5cab;
     --ramp-4: #0d366b;
     --clean: var(--vscode-editorWidget-border, rgba(128,128,128,0.28));
@@ -190,7 +193,7 @@ export class DeadweightDashboard {
     --ramp-0: #cde2fb;
     --ramp-1: #9ec5f4;
     --ramp-2: #6da7ec;
-    --ramp-3: #2a78d6;
+    --ramp-3: #2874cf;
     --ramp-4: #184f95;
   }
   * { box-sizing: border-box; }
@@ -239,7 +242,10 @@ export class DeadweightDashboard {
   .cell:hover, .cell:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: -2px; z-index: 3; }
   .cell .n { font-size: 11px; line-height: 1.25; word-break: break-all; }
   .cell .c { font-size: 10px; opacity: .85; margin-top: 1px; }
-  .cell.on-fill { color: #ffffff; }
+  /* A filled cell's label colour is measured against its fill in script, not
+     set here: the fill comes from the ramp, which does not follow the theme.
+     Only an unfilled "clean" cell actually sits on the surface, so only it can
+     take the theme's own foreground. */
   .cell.on-surface { color: var(--ink); }
 
   .legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 11px; color: var(--muted); }
@@ -345,6 +351,45 @@ export class DeadweightDashboard {
   }
   const fill = (b) => (b < 0 ? 'transparent' : 'var(' + RAMP[b] + ')');
 
+  /**
+   * Label colour for a filled cell, measured against the fill.
+   *
+   * This used to be "bucket >= 2 ? white : var(--ink)", which is wrong in a
+   * way that only shows in one theme: there are two ramps, and the dark
+   * theme's light end (#cde2fb, #9ec5f4) is nearly white. The --ink variable
+   * is the theme foreground, so in dark mode the two palest fills got near-white
+   * text on a near-white block - about 1.3:1, unreadable. A fixed bucket
+   * threshold cannot straddle both ramps; the fill's own luminance can, and
+   * keeps holding if the ramp is ever retuned.
+   */
+  const INK_ON_PALE = '#0b2947';
+
+  function luminance(hex) {
+    const m = /^#([0-9a-f]{6})$/i.exec(hex);
+    if (!m) return null;
+    const channels = [0, 2, 4].map((i) => {
+      const c = parseInt(m[1].slice(i, i + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  }
+
+  const contrast = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+  const inkCache = {};
+  function labelInk(b) {
+    if (inkCache[b] !== undefined) return inkCache[b];
+    const resolved = getComputedStyle(document.body).getPropertyValue(RAMP[b]).trim();
+    const fillLum = luminance(resolved);
+    // Unparseable value: white is right for three of the five steps, so it is
+    // the safer default of the two.
+    const ink = fillLum === null || contrast(fillLum, 1) >= contrast(fillLum, luminance(INK_ON_PALE))
+      ? '#ffffff'
+      : INK_ON_PALE;
+    inkCache[b] = ink;
+    return ink;
+  }
+
   function visible() {
     const q = el('filter').value.trim().toLowerCase();
     const scope = el('scope').value;
@@ -418,7 +463,8 @@ export class DeadweightDashboard {
       const n = cell.n;
       const b = bucket(n.density);
       const div = document.createElement('div');
-      div.className = 'cell ' + (b >= 2 ? 'on-fill' : 'on-surface');
+      div.className = b < 0 ? 'cell on-surface' : 'cell';
+      if (b >= 0) div.style.color = labelInk(b);
       div.style.left = cell.x + 'px';
       div.style.top = cell.y + 'px';
       div.style.width = cell.w + 'px';
